@@ -1,0 +1,38 @@
+# Use Ubuntu 20.04 as the base image (better ARM64 support)
+FROM arm64v8/ubuntu:20.04
+
+# Set environment variables to non-interactive to avoid prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies required for building and testing
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    curl \
+    git \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libswresample-dev \
+    libpostproc-dev \
+    libasound2-dev \
+    libssl-dev \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /usr/src/libsourcey
+
+# Copy the current directory contents into the container at /usr/src/libsourcey
+COPY . .
+
+# Create build directory and configure the project with CMake
+RUN mkdir build && cd build && \
+    cmake .. -DWITH_FFMPEG=ON
+
+# Build the project
+RUN cd build && make
+
+# Run tests
+CMD ["cd", "build", "&&", "ctest", "-V"]
