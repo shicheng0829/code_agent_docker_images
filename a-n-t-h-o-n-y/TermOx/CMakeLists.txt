@@ -1,0 +1,123 @@
+cmake_minimum_required(VERSION 3.18)
+project(TermOx VERSION 2.0.0 LANGUAGES CXX)
+
+option(USE_ASAN "Enable AddressSanitizer" OFF)
+
+# 设置C++标准
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (TERMOX_USE_ASAN)
+    message(STATUS "Enabling AddressSanitizer for all targets.")
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options(/fsanitize=address /Zi)
+        add_link_options(/fsanitize=address /INCREMENTAL:NO)
+    endif()
+endif()
+
+
+# Create Library Target
+add_library(TermOx STATIC
+    src/align.cpp
+    src/application.cpp
+    src/bordered.cpp
+    src/button.cpp
+    src/checkbox.cpp
+    src/datatable.cpp
+    src/label.cpp
+    src/lineedit.cpp
+    src/focus.cpp
+    src/pixelgrid.cpp
+    src/put.cpp
+    src/radiogroup.cpp
+    src/scrollbar.cpp
+    src/textbox.cpp
+    src/timer.cpp
+    src/widget.cpp
+    src/core/terminal.cpp
+
+    include/ox/ox.hpp
+    include/ox/align.hpp
+    include/ox/application.hpp
+    include/ox/bordered.hpp
+    include/ox/button.hpp
+    include/ox/checkbox.hpp
+    include/ox/datatable.hpp
+    include/ox/focus.hpp
+    include/ox/label.hpp
+    include/ox/layout.hpp
+    include/ox/lineedit.hpp
+    include/ox/pixelgrid.hpp
+    include/ox/put.hpp
+    include/ox/radiogroup.hpp
+    include/ox/scrollbar.hpp
+    include/ox/textbox.hpp
+    include/ox/timer.hpp
+    include/ox/widget.hpp
+
+    include/ox/core/common.hpp
+    include/ox/core/core.hpp
+    include/ox/core/events.hpp
+    include/ox/core/glyph.hpp
+    include/ox/core/terminal.hpp
+)
+
+# Include Directories for the Library
+target_include_directories(TermOx PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+# Compiler Options for the Library
+target_compile_options(TermOx
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:-Wall -Wextra -Wpedantic -Wconversion>
+)
+
+# 添加特性测试，检查是否支持format头文件
+include(CheckIncludeFileCXX)
+check_include_file_cxx("format" HAVE_FORMAT_HEADER)
+if(HAVE_FORMAT_HEADER)
+    target_compile_definitions(TermOx PRIVATE HAVE_FORMAT_HEADER)
+endif()
+
+include(FetchContent)
+
+# zzz Library Dependency
+FetchContent_Declare(
+    zzz
+    GIT_REPOSITORY https://github.com/a-n-t-h-o-n-y/zzz.git
+    GIT_TAG 8989d54a07863de079915406084cdf332675ed7e
+)
+FetchContent_MakeAvailable(zzz)
+
+# Escape Library Dependency
+FetchContent_Declare(
+    escape
+    GIT_REPOSITORY https://github.com/a-n-t-h-o-n-y/Escape.git
+    GIT_TAG 38044eb930ff8e25957f9a8b8c67fec11299e567
+)
+FetchContent_MakeAvailable(escape)
+
+# SignalsLight Library Dependency
+FetchContent_Declare(
+    signals-light
+    GIT_REPOSITORY https://github.com/a-n-t-h-o-n-y/signals-light.git
+    GIT_TAG 5b873d0aa515a2085138359e69746cd7d7a5362f
+)
+FetchContent_MakeAvailable(signals-light)
+
+# Link External Libraries to the Library Target
+target_link_libraries(TermOx PUBLIC
+    escape
+    signals-light
+    zzz
+)
+
+# Add the tests subdirectory
+add_subdirectory(tests)
+add_subdirectory(examples)

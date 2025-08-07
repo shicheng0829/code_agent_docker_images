@@ -1,0 +1,32 @@
+FROM ubuntu:18.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建工具和依赖项
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libc++1 \
+    libc++abi1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 构建项目并只保留必要的文件
+RUN mkdir build && cd build && \
+    cmake -DSAMPLES=ON -DUSE_CPP17=ON .. && \
+    make && \
+    cp samples/summary ../ && \
+    cd .. && \
+    rm -rf build
+
+# 删除源码文件以减小镜像大小
+RUN rm -rf include/ samples/ CMakeLists.txt *.md *.bash *.json *.pri *.in
+
+# 默认命令：运行示例程序
+CMD ["./summary"]

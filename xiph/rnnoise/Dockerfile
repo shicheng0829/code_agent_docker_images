@@ -1,0 +1,14 @@
+FROM gcc:9
+
+WORKDIR /usr/src/app
+
+RUN apt-get update && \
+    apt-get install -y git make autoconf automake libtool pkg-config
+
+COPY . .
+
+RUN ./autogen.sh && \
+    ./configure && \
+    make
+
+CMD ["make", "check"]

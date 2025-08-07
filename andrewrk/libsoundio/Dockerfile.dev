@@ -1,0 +1,45 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖项
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libasound2-dev \
+    libpulse-dev \
+    libjack-jackd2-dev \
+    libsndfile1-dev \
+    lcov \
+    doxygen \
+    valgrind \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建工作目录
+WORKDIR /app
+
+# 复制CMake配置文件先，这样Docker可以缓存这些层
+COPY CMakeLists.txt src/config.h.in ./
+COPY cmake/ cmake/
+COPY soundio/ soundio/
+
+# 创建构建目录
+RUN mkdir build
+
+# 复制源代码和测试文件
+COPY src/ src/
+COPY test/ test/
+COPY example/ example/
+
+# 构建项目
+RUN cd build && cmake .. && make
+
+# 设置卷挂载点，方便开发时挂载源代码
+VOLUME ["/app"]
+
+# 默认运行单元测试
+CMD ["sh", "-c", "cd build && ./unit_tests"]
+
+# 开发者可以使用以下命令来进入容器进行交互式开发：
+# docker run -it --rm -v $(pwd):/app libsoundio-dev bash
