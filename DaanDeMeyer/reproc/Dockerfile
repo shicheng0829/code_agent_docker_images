@@ -1,0 +1,34 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖项
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    clang-tidy \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码到容器中
+COPY . .
+
+# 构建项目
+RUN cmake -B build \
+    -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=ON \
+    -DREPROC++=ON \
+    -DREPROC_TEST=ON \
+    -DREPROC_EXAMPLES=ON \
+    -DREPROC_WARNINGS=ON \
+    -DREPROC_TIDY=ON \
+    -DREPROC_SANITIZERS=ON \
+    && cmake --build build
+
+# 运行测试
+CMD ["cmake", "--build", "build", "--target", "test"]

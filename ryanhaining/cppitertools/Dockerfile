@@ -1,0 +1,36 @@
+FROM ubuntu:18.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装基本依赖项
+RUN apt-get update && apt-get install -y \
+    wget \
+    build-essential \
+    scons \
+    cmake \
+    libboost-all-dev \
+    clang-6.0 \
+    libc++-dev \
+    libc++abi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置默认编译器和终端环境变量
+ENV CXX=clang++-6.0
+ENV CC=clang-6.0
+ENV TERM=xterm
+
+# 创建工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 下载测试依赖项
+RUN cd test && ./download_catch.sh
+
+# 构建所有测试
+RUN cd test && CXX=${CXX} scons
+
+# 默认命令：运行所有测试
+CMD ["./test/test_all"]

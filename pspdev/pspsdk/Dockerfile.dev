@@ -1,0 +1,29 @@
+# Development Dockerfile for PSPSDK with unit testing capabilities
+
+# Use the same base image as in CI
+FROM ghcr.io/pspdev/psptoolchain:latest
+
+# Install dependencies needed for building and testing
+RUN apk add --no-cache \
+    build-base \
+    autoconf \
+    automake \
+    zlib-dev \
+    bash \
+    git \
+    doxygen \
+    graphviz
+
+# Set environment variables
+ENV PSPDEV=/usr/local/pspdev
+ENV PATH=$PATH:$PSPDEV/bin
+
+# Copy the project files
+WORKDIR /pspsdk
+COPY . .
+
+# Build and install PSPSDK
+RUN ./build-and-install.sh
+
+# Default command to run tests
+CMD ["make", "-C", "src/samples", "-f", "Makefile.samples", "-j", "4"]

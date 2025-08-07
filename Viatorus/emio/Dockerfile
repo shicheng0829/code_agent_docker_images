@@ -1,0 +1,48 @@
+FROM ubuntu:22.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装基本依赖项
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    software-properties-common \
+    build-essential \
+    cmake \
+    gcc-11 \
+    g++-11 \
+    cppcheck \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 添加LLVM仓库
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main' && \
+    apt-get update && apt-get install -y \
+    clang-format-17 \
+    clang-tidy-17 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置默认编译器
+ENV CC=gcc-11
+ENV CXX=g++-11
+
+# 设置clang工具的替代项
+RUN update-alternatives --remove-all clang-format || true && \
+    update-alternatives --remove-all clang-tidy || true && \
+    update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-17 1000 && \
+    update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-17 1000
+
+# 创建工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 构建项目
+RUN cmake --preset=ci-ubuntu -DCMAKE_BUILD_TYPE=Debug && \
+    cmake --build build -j$(nproc)
+
+# 默认命令运行单元测试
+CMD ["ctest", "--test-dir", "build", "--output-on-failure"]
