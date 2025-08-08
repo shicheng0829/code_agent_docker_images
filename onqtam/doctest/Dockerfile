@@ -1,0 +1,31 @@
+FROM ubuntu:20.04
+
+# 避免交互式安装
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装必要的依赖项
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    gcc \
+    g++ \
+    clang \
+    libc6-dbg \
+    valgrind \
+    lcov \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码到容器中
+COPY . .
+
+# 创建构建目录
+RUN mkdir build
+
+# 默认命令：构建并运行测试
+CMD ["sh", "-c", "cd build && cmake .. -G Ninja && cmake --build . && ctest --output-on-failure"]

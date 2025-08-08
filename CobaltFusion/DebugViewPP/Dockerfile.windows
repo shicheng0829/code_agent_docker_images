@@ -1,0 +1,36 @@
+# Dockerfile for DebugView++ development and testing
+# This is a Windows-based Dockerfile for building and running tests
+
+# Use Windows Server Core with Visual Studio Build Tools
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+# Install Chocolatey package manager
+RUN powershell -Command \
+    Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install required tools
+RUN choco install -y cmake git python3 ninja nuget
+
+# Set environment variables
+ENV CMAKE_GENERATOR="Ninja"
+ENV PATH="C:\Program Files\CMake\bin;C:\ProgramData\chocolatey\bin;%PATH%"
+
+# Create working directory
+WORKDIR C:\src
+
+# Clone the repository (in a real scenario, we would copy the source instead)
+RUN git clone https://github.com/CobaltFusion/DebugViewPP.git .
+
+# Restore NuGet packages
+RUN utils\nuget.exe restore application\nuget\DebugViewpp-nuget.sln
+
+# Configure with CMake
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Ninja"
+
+# Build the project
+RUN cmake --build build --config Release
+
+# Set the default command to run tests
+CMD ["ctest", "-C", "Release", "--test-dir", "build"]

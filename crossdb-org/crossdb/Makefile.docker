@@ -1,0 +1,19 @@
+# CrossDB Development Docker Helper
+
+# 构建开发环境Docker镜像
+docker-build:
+	docker build -t crossdb-dev .
+
+# 在Docker容器中运行交互式shell
+docker-run: docker-build
+	docker run -it --rm crossdb-dev
+
+# 在Docker容器中运行测试
+docker-test: docker-build
+	docker run --rm crossdb-dev make -C test/
+
+# 清理Docker镜像
+docker-clean:
+	docker rmi crossdb-dev || true
+
+.PHONY: docker-build docker-run docker-test docker-clean

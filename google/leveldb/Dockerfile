@@ -1,0 +1,32 @@
+# Use Ubuntu 22.04 as the base image for better C++17 support
+FROM ubuntu:22.04
+
+# Set non-interactive mode for apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    libsnappy-dev \
+    libsqlite3-dev \
+    libkyotocabinet-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /leveldb
+
+# Copy the source code
+COPY . .
+
+# Initialize and update submodules
+RUN git submodule update --init --recursive
+
+# Build the project
+RUN mkdir -p build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Release .. && \
+    cmake --build . --config Release
+
+# Default command to run tests
+CMD ["sh", "-c", "cd build && ctest -C Release --verbose"]
