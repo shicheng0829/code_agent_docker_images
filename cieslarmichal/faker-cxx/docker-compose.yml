@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  faker-cxx-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/build
+      - /app/install
+    working_dir: /app
+    command: ["tail", "-f", "/dev/null"]  # 保持容器运行
+    tty: true
+    stdin_open: true

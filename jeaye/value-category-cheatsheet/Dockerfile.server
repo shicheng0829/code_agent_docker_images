@@ -1,0 +1,29 @@
+FROM openjdk:8-alpine
+
+# Install bash and other utilities
+RUN apk add --no-cache bash curl
+
+# Install Leiningen
+RUN wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein \
+    && chmod +x lein \
+    && mv lein /usr/local/bin/
+
+# Create app directory
+WORKDIR /app
+
+# Copy project files
+COPY project.clj /app/
+COPY README.md /app/
+
+# Install dependencies
+RUN lein deps
+
+# Copy source code
+COPY src /app/src
+COPY resources /app/resources
+
+# Expose port
+EXPOSE 3000
+
+# Default command runs the server
+CMD ["lein", "ring", "server-headless", "3000"]
