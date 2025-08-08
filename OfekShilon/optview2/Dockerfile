@@ -1,0 +1,41 @@
+# Use Ubuntu as base image
+FROM ubuntu:20.04
+
+# Set environment variables to avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    clang \
+    make \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY . /app
+
+# Create and activate virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Python dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Make run_tests.sh executable
+RUN chmod +x run_tests.sh
+
+# Default command runs the example
+CMD ["bash", "cpp_optimization_example/run_optview2.sh"]
+
+# Test command
+ENTRYPOINT ["/app/run_tests.sh"]

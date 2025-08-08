@@ -1,0 +1,52 @@
+# UB Canaries Development Environment
+
+This Dockerfile sets up a complete development environment for working with the UB Canaries project.
+
+## Features
+
+- Ubuntu 20.04 base image
+- GCC and Clang compilers
+- Perl interpreter (required for running tests)
+- GDB debugger and Valgrind memory analyzer
+- Vim and Nano text editors
+- Git version control
+
+## Building the Docker Image
+
+```bash
+docker build -t ub-canaries-dev .
+```
+
+## Running Tests
+
+### Run all tests:
+```bash
+docker run --rm ub-canaries-dev
+```
+
+### Run a specific test:
+```bash
+docker run --rm ub-canaries-dev /usr/local/bin/run-test signed-integer-overflow
+```
+
+### Interactive development:
+```bash
+docker run --rm -it ub-canaries-dev bash
+```
+
+Inside the container, you can:
+- Edit files with `vim` or `nano`
+- Run tests with `./run-canaries`
+- Debug programs with `gdb`
+- Analyze memory usage with `valgrind`
+- Use `run-test <test-name>` to run individual tests
+
+## Modifying Tests
+
+To modify and test your changes:
+1. Start an interactive container: `docker run --rm -it ub-canaries-dev bash`
+2. Make changes to the C files
+3. Run specific tests to see the results
+4. Exit the container when done
+
+Note that changes inside the container are not persistent. To make permanent changes, modify the files on your host system and rebuild the Docker image.
