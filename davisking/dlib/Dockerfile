@@ -3,7 +3,7 @@ FROM ubuntu:20.04
 # 避免在安装过程中出现交互式提示
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 安装构建依赖项
+# 安装构建依赖
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -21,7 +21,7 @@ COPY . .
 # 安装Python依赖
 RUN pip3 install pytest numpy
 
-# 构建dlib Python包
+# 构建dlib Python扩展
 RUN python3 setup.py build
 RUN python3 setup.py install --user
 

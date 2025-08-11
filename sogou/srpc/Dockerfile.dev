@@ -1,0 +1,38 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖项和开发工具
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libgtest-dev \
+    libssl-dev \
+    libsnappy-dev \
+    liblz4-dev \
+    git \
+    vim \
+    gdb \
+    valgrind \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码到容器中
+COPY . .
+
+# 初始化并更新子模块
+RUN git submodule update --init --recursive
+
+# 构建项目
+RUN make -j$(nproc)
+
+# 构建测试
+RUN make -C test
+
+# 默认运行bash shell以便交互式开发
+CMD ["/bin/bash"]

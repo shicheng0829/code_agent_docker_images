@@ -1,0 +1,20 @@
+# 忽略Git相关文件
+.git/
+.gitignore
+
+# 忽略IDE相关文件
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# 忽略临时文件
+*.tmp
+*.log
+
+# 忽略构建产物（虽然这些会被重建，但明确忽略更好）
+*.o
+*.a
+*.so*
+jsonlint
+libjson.pc

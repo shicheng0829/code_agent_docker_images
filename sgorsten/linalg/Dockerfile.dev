@@ -1,0 +1,48 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建工具和依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    g++ \
+    clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码到容器中
+COPY . .
+
+# 设置工作目录为samples目录
+WORKDIR /app/samples
+
+# 默认编译器
+ARG COMPILER=g++
+ENV COMPILER=$COMPILER
+
+# 根据环境变量选择编译器
+RUN if [ "$COMPILER" = "clang++" ]; then \
+        make clean && CXX=clang++ make; \
+    else \
+        make clean && make; \
+    fi
+
+# 默认运行测试
+CMD ["./linalg-test"]
+
+# 使用说明：
+# 1. 使用默认编译器(GCC)构建和运行测试：
+#    docker build -t linalg-test .
+#    docker run --rm linalg-test
+#
+# 2. 使用Clang编译器构建和运行测试：
+#    docker build -t linalg-test --build-arg COMPILER=clang++
+#    docker run --rm linalg-test
+#
+# 3. 开发模式 - 挂载本地代码并在容器中构建和测试：
+#    docker run --rm -v $(pwd):/app linalg-test-dev bash
+#    然后在容器内执行：cd samples && make clean && make && ./linalg-test

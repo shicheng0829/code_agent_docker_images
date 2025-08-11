@@ -1,0 +1,49 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(TinyTIFF)
+
+# 包含必要的模块
+include(GenerateExportHeader)
+
+# 设置输出目录
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# 创建库
+add_library(TinyTIFF 
+    src/tinytiffreader.c
+    src/tinytiffwriter.c
+    src/tinytiff_ctools_internal.c
+)
+
+# 设置包含目录
+target_include_directories(TinyTIFF PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+# 生成导出头文件
+generate_export_header(TinyTIFF)
+
+# 生成版本文件
+configure_file(
+    src/tinytiff_version.h.in
+    tinytiff_version.h
+)
+
+# 安装规则
+install(TARGETS TinyTIFF
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(FILES 
+    src/tinytiffreader.h
+    src/tinytiffwriter.h
+    src/tinytiff_defs.h
+    ${CMAKE_CURRENT_BINARY_DIR}/tinytiff_version.h
+    ${CMAKE_CURRENT_BINARY_DIR}/tinytiff_export.h
+    DESTINATION include
+)

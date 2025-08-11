@@ -1,27 +1,36 @@
+# Use Ubuntu 24.04 as the base image, matching the CI environment
 FROM ubuntu:24.04
 
-# 避免在安装过程中出现交互式提示
+# Set environment variables to non-interactive to avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
 
-# 安装构建依赖项
-RUN apt-get update && apt-get install -y \
+# Install dependencies required for building bgfx
+# This includes build tools, libraries for graphics development, and utilities
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     build-essential \
     libgl-dev \
+    ca-certificates \
     git \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# 设置工作目录
-WORKDIR /app
+# Set the working directory inside the container
+WORKDIR /usr/src/app
 
-# 复制源代码到容器中
+# Copy the entire project directory into the container
+# This assumes the Dockerfile is in the root of the bgfx repository
 COPY . .
 
-# 构建项目
-RUN make linux-gcc-release64 -j$(nproc)
+# Copy and make the build script executable
+COPY build.sh /usr/local/bin/build.sh
+RUN chmod +x /usr/local/bin/build.sh
 
-# 运行检查以验证构建
-RUN ls -lash ".build/linux64_gcc/bin"
-RUN ".build/linux64_gcc/bin/geometrycRelease" --version
-RUN ".build/linux64_gcc/bin/shadercRelease" --version
-RUN ".build/linux64_gcc/bin/texturecRelease" --version
+# The bgfx project requires its dependencies (bx and bimg) to be checked out
+# These are typically expected to be sibling directories.
+# We'll handle this during the build process in the container.
+
+# Define the default command to run when the container starts
+# This will be overridden by docker run commands
+CMD ["/bin/bash"]

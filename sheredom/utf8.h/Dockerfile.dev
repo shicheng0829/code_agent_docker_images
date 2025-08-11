@@ -1,0 +1,47 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建工具和依赖项
+# 包含GCC、Clang、TCC编译器以及CMake构建系统
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    gcc \
+    g++ \
+    clang \
+    tcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码到容器中
+COPY . .
+
+# 创建构建目录
+RUN mkdir -p build
+
+# 默认构建项目（使用默认编译器）
+WORKDIR /app/build
+RUN cmake ../test && make
+
+# 提供多种运行选项：
+# 1. 默认：运行所有测试
+# 2. 可通过docker run utf8-test <command>来运行特定命令
+CMD ["sh", "-c", "./utf8_test && ./utf8_no_malloc_test && ./utf8_test_c90 && ./utf8_test_c99 && ./utf8_test_c11 && ./utf8_test_cpp11 && ./utf8_test_cpp14 && ./utf8_test_cpp17 && ./utf8_test_cpp20 && ./utf8_test_cpp20_no_char_t"]
+
+# 开发者可以使用以下命令来使用特定编译器构建和测试：
+#
+# 使用GCC构建和测试：
+#   docker run --rm utf8-test bash -c "cd .. && rm -rf build && mkdir build && cd build && cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ../test && make && ./utf8_test"
+#
+# 使用Clang构建和测试：
+#   docker run --rm utf8-test bash -c "cd .. && rm -rf build && mkdir build && cd build && cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ ../test && make && ./utf8_test"
+#
+# 使用TCC构建和测试：
+#   docker run --rm utf8-test bash -c "cd .. && rm -rf build && mkdir build && cd build && cmake -DCMAKE_C_COMPILER=tcc -DCMAKE_CXX_COMPILER=g++ ../test && make && ./utf8_test"
+#
+# 交互式开发环境：
+#   docker run -it --rm -v $(pwd):/app utf8-test bash

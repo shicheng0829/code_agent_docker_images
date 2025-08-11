@@ -1,0 +1,39 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建工具和开发工具
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    curl \
+    git \
+    vim \
+    valgrind \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 只复制必要的文件
+COPY parson.c parson.h tests.c Makefile ./ 
+COPY tests/ tests/
+
+# 创建一个用于交互式开发的脚本
+RUN echo '#!/bin/bash\n\
+echo "Parson Development Environment"\n\
+echo "============================"\n\
+echo "Available commands:"\n\
+echo "  make test        - Run C tests"\n\
+echo "  make testcpp     - Run C++ tests"\n\
+echo "  make all         - Run all tests"\n\
+echo "  make clean       - Clean build artifacts"\n\
+echo "  valgrind ./test  - Run tests with Valgrind"\n' > /usr/local/bin/dev-env && \
+chmod +x /usr/local/bin/dev-env
+
+# 默认运行命令：显示开发环境信息
+CMD ["dev-env"]

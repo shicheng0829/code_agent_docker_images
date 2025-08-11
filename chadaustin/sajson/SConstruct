@@ -1,0 +1,74 @@
+import os
+import multiprocessing
+import sys
+
+SetOption("num_jobs", multiprocessing.cpu_count())
+
+
+def export(fn):
+    Export({fn.__name__: fn})
+    return fn
+
+
+@export
+def sajson(env):
+    env.Append(CPPPATH=["#/include"])
+
+
+@export
+def unittestpp(env):
+    env.Append(
+        CPPPATH=["#/third-party/UnitTest++/src"],
+        LIBPATH=["#/${BUILDDIR}/libraries"],
+        LIBS=["unittestpp"],
+    )
+
+
+def gcc(env):
+    env["CC"] = "gcc"
+    env["CXX"] = "g++"
+
+
+def clang(env):
+    env["CC"] = "clang"
+    env["CXX"] = "clang++"
+
+
+def dbg(env):
+    env.Append(CCFLAGS=["-g"])
+
+
+def opt(env):
+    env.Append(CCFLAGS=["-O2", "-g"], LINKFLAGS=["-O2", "-g"])
+
+
+def san(env):
+    static_opt = "-static-libasan" if env.subst("$CC") == "gcc" else None
+    env.Append(
+        CCFLAGS=[
+            "-g",
+            # ASAN & UBSAN
+            "-fsanitize=address,undefined",
+            # Requires newer gcc.
+            # '-fsanitize=pointer-compare', '-fsanitize=pointer-subtract',
+        ],
+        LINKFLAGS=["-g", static_opt, "-fsanitize=address,undefined"],
+    )
+
+
+env = Environment(
+    ENV=os.environ,
+    CXXFLAGS=["-std=c++11", "-Wall", "-Werror", "-Wno-unused-private-field"],
+)
+
+# Only build versions that work on ARM64
+builds = [
+    ("clang-opt", [clang, opt]),
+    ("clang-dbg", [clang, dbg]),
+    ("clang-san", [clang, san]),
+]
+
+for name, tools in builds:
+    e = env.Clone(tools=tools)
+    e.Append(BUILDDIR=os.path.join("build", name))
+    e.SConscript("SConscript", variant_dir="$BUILDDIR", duplicate=0, exports={"env": e})

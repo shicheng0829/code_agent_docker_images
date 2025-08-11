@@ -1,0 +1,31 @@
+FROM ubuntu:18.04
+
+# Install dependencies including development tools
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++ \
+    make \
+    libsfml-dev \
+    git \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files
+COPY . .
+
+# Build the project
+RUN make && make lib
+
+# Make test script executable
+RUN chmod +x ./test_dev_env.sh
+
+# Create a non-root user
+RUN useradd -ms /bin/bash developer
+RUN chown -R developer:developer /app
+USER developer
+
+# Default command for development
+CMD ["./test_dev_env.sh"]

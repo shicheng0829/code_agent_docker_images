@@ -1,0 +1,26 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建工具和依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    clang \
+    gcc \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 只复制必要的文件而不是整个目录
+COPY picojson.h Makefile ./ 
+COPY test.cc ./
+COPY picotest/ ./picotest/
+
+# 编译测试可执行文件
+RUN make
+
+# 默认运行测试
+CMD ["make", "test"]

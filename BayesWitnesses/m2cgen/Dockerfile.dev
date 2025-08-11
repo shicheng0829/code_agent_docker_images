@@ -1,0 +1,58 @@
+FROM ubuntu:focal
+
+# Use Python 3.10 as default for development
+ARG python=3.10
+
+# Environment variables for locales, timezone, and threading
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=Etc/UTC
+
+# Set timezone and install base packages
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
+    apt-get update && \
+    apt-get install --no-install-recommends -y \
+        locales \
+        software-properties-common \
+        wget \
+        curl \
+        git \
+        make \
+        build-essential && \
+    locale-gen $LC_ALL && \
+    update-locale && \
+    add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update && \
+    # Install Python and development tools
+    apt-get install --no-install-recommends -y \
+        python${python}-dev \
+        python${python}-distutils \
+        python3-setuptools && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python and pip
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python${python} 1 && \
+    wget -qO- https://bootstrap.pypa.io/get-pip.py | python
+
+# Set working directory
+WORKDIR /m2cgen
+
+# Copy requirements file
+COPY requirements-test.txt ./
+
+# Install numpy and Cython first to satisfy sklearn-contrib-lightning dependency
+RUN pip install --no-cache-dir numpy==1.23.3 Cython==0.29.32
+
+# Install test dependencies
+RUN pip install --no-cache-dir -r requirements-test.txt
+
+# Copy the rest of the application
+COPY . .
+
+# Install the package in development mode
+RUN pip install -e .
+
+# Default command to run tests
+CMD ["make", "test-api"]

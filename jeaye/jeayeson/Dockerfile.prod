@@ -1,0 +1,25 @@
+FROM ubuntu:18.04
+
+# 安装最小运行时依赖项
+RUN apt-get update && apt-get install -y \
+    libboost-system1.65.1 \
+    libboost-filesystem1.65.1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非root用户
+RUN useradd -ms /bin/bash jeayeson
+
+# 设置工作目录
+WORKDIR /app
+
+# 只复制头文件（因为这是一个header-only库）
+COPY include/ ./include/
+
+# 更改所有权
+RUN chown -R jeayeson:jeayeson /app
+
+# 切换到非root用户
+USER jeayeson
+
+# 设置默认命令
+CMD ["/bin/bash"]
