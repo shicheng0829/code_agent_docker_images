@@ -1,0 +1,37 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖项
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    python2 \
+    python3 \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建python符号链接
+RUN ln -s /usr/bin/python2 /usr/bin/python
+
+# 安装CxxTest
+WORKDIR /tmp
+RUN git clone https://github.com/CxxTest/cxxtest.git
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 修复测试代码中的异常捕获问题
+RUN sed -i 's/std::runtime_error/const std::runtime_error\&/g' test/cxxtest/general.h
+
+# 设置环境变量以便找到CxxTest
+ENV PATH="/tmp/cxxtest/bin:${PATH}"
+ENV CPLUS_INCLUDE_PATH="/tmp/cxxtest:${CPLUS_INCLUDE_PATH}"
+
+# 默认命令是运行所有测试
+CMD ["make", "-C", "test", "default-all"]

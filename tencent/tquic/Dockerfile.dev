@@ -1,0 +1,32 @@
+# Development Dockerfile for TQUIC
+# This Dockerfile sets up an environment for building and testing TQUIC
+
+FROM rust:1.74
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    cmake \
+    clang \
+    libclang-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /usr/src/tquic
+
+# Copy project files
+COPY . .
+
+# Initialize and update submodules
+# Note: This requires the .git directory to be present in the build context
+RUN if [ -d ".git" ]; then \
+        git submodule update --init --recursive; \
+    else \
+        echo "Warning: .git directory not found. Assuming submodules are already initialized."; \
+    fi
+
+# Build the project with all features
+RUN cargo build --all --all-features
+
+# Default command runs tests
+CMD ["cargo", "test", "--verbose"]

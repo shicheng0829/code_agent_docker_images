@@ -1,0 +1,40 @@
+FROM ubuntu:24.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装基本依赖
+RUN apt-get update && apt-get install -y \
+    cmake \
+    ninja-build \
+    g++-14 \
+    clang-19 \
+    libfmt-dev \
+    libc++-19-dev \
+    libc++abi-19-dev \
+    clang-tools-19 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置默认编译器为GCC 14
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 140 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 140 \
+    && update-alternatives --set gcc /usr/bin/gcc-14 \
+    && update-alternatives --set g++ /usr/bin/g++-14
+
+# 设置Clang 19为默认Clang版本
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 190 \
+    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 190 \
+    && update-alternatives --install /usr/bin/clang-scan-deps clang-scan-deps /usr/bin/clang-scan-deps-19 190 \
+    && update-alternatives --set clang /usr/bin/clang-19 \
+    && update-alternatives --set clang++ /usr/bin/clang++-19 \
+    && update-alternatives --set clang-scan-deps /usr/bin/clang-scan-deps-19
+
+# 创建工作目录
+WORKDIR /app
+
+# 复制源代码到容器中
+COPY . .
+
+# 默认命令：运行GCC工作流测试
+CMD ["cmake", "--workflow", "--preset=ci-gcc"]

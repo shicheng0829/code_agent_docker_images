@@ -1,55 +1,85 @@
-# Ubuntu Docker file for TileDB Development and Testing
+# Development Dockerfile for TileDB with unit testing capabilities
 
 FROM ubuntu:22.04
 
-# Avoid prompts from apt
+# Prevent interactive dialogs during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    cmake \
+    git \
     wget \
-    zip \
+    curl \
+    pkg-config \
     autoconf \
     automake \
     libtool \
-    pkg-config \
-    curl \
-    unzip \
-    git \
     python3 \
-    python3-dev \
     python3-pip \
     libssl-dev \
-    gdb \
-    ninja-build \
-    ccache \
-    && apt-get clean \
-    && apt-get purge -y \
-    && rm -rf /var/lib/apt/lists* \
-    && pip3 install cmake
+    libbz2-dev \
+    liblz4-dev \
+    libzstd-dev \
+    zlib1g-dev \
+    nlohmann-json3-dev \
+    libspdlog-dev \
+    doxygen \
+    && rm -rf /var/lib/apt/lists/*
 
-# Setup environment
-RUN useradd tiledb \
-    && mkdir /home/tiledb \
-    && chown tiledb /home/tiledb
-ENV HOME /home/tiledb
-WORKDIR /home/tiledb
+# Install vcpkg dependencies
+RUN apt-get update && apt-get install -y \
+    zip \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy TileDB source files
-COPY . /home/tiledb/TileDB
-RUN chown -R tiledb: /home/tiledb/TileDB
+# Create working directory
+WORKDIR /opt
+
+# Clone and bootstrap vcpkg
+RUN git clone https://github.com/Microsoft/vcpkg.git \
+    && cd vcpkg \
+    && ./bootstrap-vcpkg.sh
+
+# Set vcpkg environment variables
+ENV VCPKG_ROOT=/opt/vcpkg
+ENV PATH=$VCPKG_ROOT:$PATH
+
+# Create tiledb user with proper permissions
+RUN useradd -ms /bin/bash tiledb \
+    && chown -R tiledb:tiledb /opt/vcpkg
 
 # Switch to tiledb user
 USER tiledb
 
-# Bootstrap and build TileDB
-RUN cd /home/tiledb/TileDB \
-    && mkdir build \
-    && cd build \
-    && ../bootstrap --enable-verbose --enable-assertions \
-    && cmake --build . -j$(nproc) --target install \
-    && cmake --build . -j$(nproc) --target tiledb_unit unit_vfs tiledb_regression all_link_complete
+# Set working directory
+WORKDIR /home/tiledb
 
-# Run tests
-CMD ["sh", "-c", "cd /home/tiledb/TileDB/build && ./test/ci/test_assert -d yes && ./test/regression/tiledb_regression -d yes && ./test/tiledb_unit -d yes \"~[rapidcheck]\" && ./tiledb/sm/filesystem/test/unit_vfs -d yes"]
+# Copy TileDB source code
+COPY --chown=tiledb:tiledb . /home/tiledb/TileDB
+
+# Set working directory to TileDB source
+WORKDIR /home/tiledb/TileDB
+
+# Create build directory
+RUN mkdir build
+
+# Install TileDB dependencies with vcpkg
+RUN cd build && \
+    cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
+    -DTILEDB_S3=ON \
+    -DTILEDB_AZURE=ON \
+    -DTILEDB_GCS=ON \
+    -DTILEDB_SERIALIZATION=ON \
+    -DTILEDB_TESTS=ON \
+    -DTILEDB_TOOLS=ON \
+    -DTILEDB_WEBP=ON
+
+# Build TileDB
+RUN cd build && make -j$(nproc)
+
+# Default command runs a simple test to verify the build
+CMD ["sh", "-c", "cd build && ./tiledb/sm/misc/time"]

@@ -1,0 +1,53 @@
+FROM ubuntu:20.04
+
+# 避免交互式安装
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装基本依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    ca-certificates \
+    software-properties-common \
+    wget \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# 添加LLVM仓库
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-17 main"
+
+# 安装编译工具和依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    clang-17 \
+    clang-tools-17 \
+    clang-format-17 \
+    clang-tidy-17 \
+    libc++-17-dev \
+    libc++abi-17-dev \
+    libclang-common-17-dev \
+    libclang-rt-17-dev \
+    libunwind-17-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码
+COPY . .
+
+# 构建项目
+RUN cmake -G Ninja -S . -B build \
+    -DCISTA_FMT=OFF \
+    -DCMAKE_C_COMPILER=clang-17 \
+    -DCMAKE_CXX_COMPILER=clang++-17 \
+    -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
+    -DCMAKE_EXE_LINKER_FLAGS="-lc++abi -lpthread" \
+    -DCMAKE_BUILD_TYPE=Release
+
+RUN cmake --build build --target cista-test cista-test-single-header
+
+# 默认命令：运行测试
+CMD ["./build/cista-test"]

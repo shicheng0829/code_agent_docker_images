@@ -1,0 +1,54 @@
+--- a/Source/Runtime/TypeInfo.h
++++ b/Source/Runtime/TypeInfo.h
+@@ -10,11 +10,7 @@
+ 
+ #include <type_traits>
+ 
+-#if defined(COMPILER_CLANG) || defined(COMPILER_GNU)
+-
+-#define IsTriviallyDefaultConstructible(x) std::has_trivial_default_constructor<x>::value
+-
+-#else
++#if defined(__GNUC__) && (__GNUC__ < 5)
+ 
+ #define IsTriviallyDefaultConstructible(x) std::is_trivially_default_constructible<x>::value
+ 
+@@ -37,21 +33,21 @@ namespace ursine
+         private:
+             template<typename U = T>
+             static void addDefaultConstructor(
+-                TypeData &data, 
+-                typename std::enable_if<
+-                    !IsTriviallyDefaultConstructible(U)
+-                >::type* = nullptr
++                TypeData &data
+             );
+ 
+             template<typename U = T>
+             static void addDefaultConstructor(
+-                TypeData &data, 
+-                typename std::enable_if<
+-                    IsTriviallyDefaultConstructible(U)
+-                >::type* = nullptr
++                TypeData &data
+             );
+ 
++#if __cplusplus >= 201703L
++            template<typename U = T>
++#else
+             template<typename U = T>
++#endif
+             static void applyTrivialAttributes(TypeData &data, 
+                 typename std::enable_if< 
+                     !std::is_trivial<U>::value 
+@@ -59,8 +55,11 @@ namespace ursine
+             );
+ 
++#if __cplusplus >= 201703L
++            template<typename U = T>
++#else
+             template<typename U = T>
++#endif
+             static void applyTrivialAttributes(TypeData &data, 
+                 typename std::enable_if< 
+                     std::is_trivial<U>::value 

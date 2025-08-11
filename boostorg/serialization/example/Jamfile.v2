@@ -1,0 +1,8 @@
+# Simple test for Boost.Serialization
+exe simple_test :
+    simple_test.cpp
+    /boost/serialization//boost_serialization
+    /boost/archive//boost_archive
+    ;
+
+install test_bin : simple_test : <location>. ;

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  libxlsxwriter-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      # 排除不需要挂载的目录
+      - /app/third_party
+      - /app/src
+      - /app/lib
+    working_dir: /app
+    command: tail -f /dev/null  # 保持容器运行
+    
+  libxlsxwriter-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: make test
+    
+  libxlsxwriter-unit-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: make test_unit
+    
+  libxlsxwriter-functional-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: make test_functional

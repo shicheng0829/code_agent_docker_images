@@ -1,0 +1,55 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖项
+RUN apt-get update && apt-get install -y \
+    gcc \
+    make \
+    pkg-config \
+    zlib1g-dev \
+    libluajit-5.1-dev \
+    libsqlite3-dev \
+    libbrotli-dev \
+    libzstd-dev \
+    python3 \
+    python3-pip \
+    lua5.1 \
+    valgrind \
+    wget \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装更新版本的CMake
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    apt-add-repository 'deb https://apt.kitware.com/ubuntu/ focal main' && \
+    apt-get update && \
+    apt-get install -y cmake
+
+# 安装Python依赖
+RUN pip3 install requests
+
+# 创建非root用户
+RUN useradd -m -s /bin/bash developer
+
+# 设置工作目录
+WORKDIR /lwan
+
+# 复制源代码
+COPY . .
+
+# 更改所有权
+RUN chown -R developer:developer /lwan
+
+# 切换到非root用户
+USER developer
+
+# 创建构建目录
+RUN mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug
+
+# 编译项目
+RUN cd build && make -j$(nproc)
+
+# 默认命令是运行测试套件
+CMD ["/bin/bash", "-c", "cd build && make testsuite"]

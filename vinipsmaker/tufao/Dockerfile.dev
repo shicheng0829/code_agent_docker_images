@@ -1,0 +1,44 @@
+FROM ubuntu:20.04
+
+# 避免交互式安装
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装依赖项和开发工具
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    qtbase5-dev \
+    qtbase5-dev-tools \
+    qt5-qmake \
+    libqt5core5a \
+    libqt5network5 \
+    libqt5test5 \
+    libboost-all-dev \
+    git \
+    vim \
+    valgrind \
+    gdb \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 初始化并更新子模块
+RUN git submodule update --init
+
+# 构建项目并启用测试
+RUN mkdir build && cd build && \
+    cmake -DENABLE_TESTS=ON .. && \
+    make
+
+# 默认运行测试
+CMD ["sh", "-c", "cd build && ctest --output-on-failure"]
+
+# 开发说明：
+# 1. 构建镜像: docker build -t tufao-dev -f Dockerfile.dev .
+# 2. 运行测试: docker run --rm tufao-dev
+# 3. 交互式开发: docker run -it --rm -v $(pwd):/app tufao-dev bash
+# 4. 在交互模式下重新编译: cd build && make

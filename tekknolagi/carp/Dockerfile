@@ -1,0 +1,49 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建工具和依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 初始化并更新子模块
+RUN git submodule init && git submodule update
+
+# 修改Makefile以添加-fPIC标志解决PIE问题
+RUN sed -i 's/CFLAGS  += -std=c99 -pedantic -Wall -W -Werror -Wextra \\\ -Wwrite-strings -Wpointer-arith -Wbad-function-cast/CFLAGS  += -std=c99 -pedantic -Wall -W -Werror -Wextra \\\ -Wwrite-strings -Wpointer-arith -Wbad-function-cast -fPIC/' Makefile
+
+# 修改reg_lookup.c中的函数名
+RUN sed -i 's/in_reg_set (str)/carp_reg_lookup (str)/' src/reg_lookup.c
+
+# 修改instr_lookup.c中的函数名
+RUN sed -i 's/in_instr_set (str)/carp_instr_lookup (str)/' src/instr_lookup.c
+
+# 修改tokenizer.c中的函数声明引用
+RUN sed -i 's/return in_reg_set(s) != CARP_REG_UNDEF;/return carp_reg_lookup(s) != CARP_REG_UNDEF;/' src/tokenizer.c && \
+    sed -i 's/return in_instr_set(s) != CARP_INSTR_UNDEF;/return carp_instr_lookup(s) != CARP_INSTR_UNDEF;/' src/tokenizer.c
+
+# 修改Makefile中的LIB_SRCS以确保正确的链接顺序
+RUN sed -i 's/LIB_SRCS = $(shell echo src\/\*\.c src\/lib\/\*\.c)/LIB_SRCS = src\/reg_lookup.c src\/instr_lookup.c src\/instructions.c src\/lexer.c src\/machine.c src\/registers.c src\/tokenizer.c src\/lib\/ht.c src\/lib\/stack.c/' Makefile
+
+# 修复测试文件中的头文件包含路径
+RUN sed -i 's/#include "..\/src\/lib\/carp_ht.h"/#include "..\/src\/lib\/ht.h"/' tests/ht.c && \
+    sed -i 's/#include "..\/src\/lib\/carp_stack.h"/#include "..\/src\/lib\/stack.h"/' tests/stack.c && \
+    sed -i 's/#include "..\/src\/lib\/carp_registers.h"/#include "..\/src\/registers.h"/' tests/registers.c && \
+    sed -i 's/#include "..\/src\/carp_registers.h"/#include "..\/src\/registers.h"/' tests/registers.c && \
+    sed -i 's/#include "..\/..\/src\/lib\/carp_types.h"/#include "..\/..\/src\/lib\/types.h"/' tests/instr/tests_instr.h && \
+    sed -i 's/#include "..\/..\/src\/carp_machine.h"/#include "..\/..\/src\/machine.h"/' tests/instr/tests_instr.h
+
+# 构建项目
+RUN make clean && make
+
+# 运行测试
+CMD ["make", "test"]

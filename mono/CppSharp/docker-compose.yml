@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  cppsharp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/build
+      - /app/bin
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: /bin/bash

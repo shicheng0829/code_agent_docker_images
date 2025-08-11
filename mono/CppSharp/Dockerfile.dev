@@ -1,0 +1,38 @@
+FROM ubuntu:22.04
+
+# 避免在安装过程中出现交互提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    clang \
+    cmake \
+    curl \
+    gcc-11 \
+    g++-11 \
+    git \
+    libxml2-dev \
+    make \
+    ninja-build \
+    python3 \
+    tar \
+    unzip \
+    wget \
+    xz-utils \
+    zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 .NET SDK
+RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- -c LTS --install-dir /usr/share/dotnet \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+
+# 设置工作目录
+WORKDIR /app
+
+# 下载Premake（如果尚未存在）
+RUN curl -fsSL https://github.com/premake/premake-core/releases/download/v5.0.0-beta2/premake-5.0.0-beta2-linux.tar.gz | tar -xz -C /usr/local/bin/ \
+    && chmod +x /usr/local/bin/premake5
+
+# 默认命令：启动bash shell以便进行交互式开发
+CMD ["/bin/bash"]

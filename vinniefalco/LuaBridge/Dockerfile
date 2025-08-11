@@ -1,0 +1,36 @@
+FROM ubuntu:20.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libgtest-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 构建和安装Google Test
+RUN cd /usr/src/googletest && \
+    cmake . && \
+    make && \
+    make install || \
+    cd /usr/src/gtest && \
+    cmake . && \
+    make && \
+    cp lib/*.a /usr/lib
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制项目文件
+COPY . .
+
+# 构建项目
+RUN cmake -DCMAKE_BUILD_TYPE=Debug -B build && \
+    cmake --build build --config Debug -j$(nproc)
+
+# 运行测试
+WORKDIR /app/build
+CMD ["ctest", "--verbose"]

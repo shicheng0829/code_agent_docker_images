@@ -1,0 +1,28 @@
+FROM node:12-bullseye
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    python \
+    build-essential \
+    vim \
+    git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose port for development server if needed
+EXPOSE 3000
+
+# Default command - start a bash shell for development
+CMD ["/bin/bash"]

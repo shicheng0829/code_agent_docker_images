@@ -1,0 +1,20 @@
+FROM ubuntu:22.04
+
+# 避免在安装过程中出现交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装运行时依赖项
+RUN apt-get update && apt-get install -y \
+    libgcc-s1 \
+    libstdc++6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制构建产物
+COPY --from=reflect-cpp-dev /app/build/libreflectcpp.a ./lib/
+COPY --from=reflect-cpp-dev /app/include ./include/
+
+# 设置默认命令
+CMD ["/bin/bash"]
